@@ -1,0 +1,14 @@
+
+:orphan:
+
+.. _sphx_glr_prototype_sg_execution_times:
+
+Computation times
+=================
+**34:38.554** total execution time for **prototype** files:
+
+- **34:38.554**: :ref:`sphx_glr_prototype_numeric_suite_tutorial.py` (``numeric_suite_tutorial.py``)
+- **00:00.000**: :ref:`sphx_glr_prototype_fx_graph_mode_ptq_dynamic.py` (``fx_graph_mode_ptq_dynamic.py``)
+- **00:00.000**: :ref:`sphx_glr_prototype_fx_graph_mode_quant_guide.py` (``fx_graph_mode_quant_guide.py``)
+- **00:00.000**: :ref:`sphx_glr_prototype_torchscript_freezing.py` (``torchscript_freezing.py``)
+- **00:00.000**: :ref:`sphx_glr_prototype_vmap_recipe.py` (``vmap_recipe.py``)

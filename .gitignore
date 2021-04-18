@@ -1,11 +1,3 @@
-# sphinx things
-beginner
-intermediate
-advanced
-pytorch_basics
-recipes
-prototype
-
 #data things
 _data/
 advanced_source/images/
@@ -30,7 +22,7 @@ MNIST/
 #builds
 _build/
 _static/thumbs/
-# docs/
+docs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

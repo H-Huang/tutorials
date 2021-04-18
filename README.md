@@ -39,5 +39,5 @@ PyTorch Repo [README.md](https://github.com/pytorch/pytorch/blob/master/README.m
 # Update these pages
 
 1. `make html-noplot`
-2. `p -fR ./_build/* ./docs/`
+2. `cp -fR ./_build/* ./docs/`
 3. `git push fork my-gh-pages`

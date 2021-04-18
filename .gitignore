@@ -20,7 +20,7 @@ prototype_source/data
 MNIST/
 
 #builds
-_build/
+# _build/
 _static/thumbs/
 # docs/
 

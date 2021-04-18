@@ -22,7 +22,7 @@ MNIST/
 #builds
 _build/
 _static/thumbs/
-docs/
+# docs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,0 +1,752 @@
+.. note::
+    :class: sphx-glr-download-link-note
+
+    Click :ref:`here <sphx_glr_download_beginner_transfer_learning_tutorial.py>` to download the full example code
+.. rst-class:: sphx-glr-example-title
+
+.. _sphx_glr_beginner_transfer_learning_tutorial.py:
+
+
+Transfer Learning for Computer Vision Tutorial
+==============================================
+**Author**: `Sasank Chilamkurthy <https://chsasank.github.io>`_
+
+In this tutorial, you will learn how to train a convolutional neural network for
+image classification using transfer learning. You can read more about the transfer
+learning at `cs231n notes <https://cs231n.github.io/transfer-learning/>`__
+
+Quoting these notes,
+
+    In practice, very few people train an entire Convolutional Network
+    from scratch (with random initialization), because it is relatively
+    rare to have a dataset of sufficient size. Instead, it is common to
+    pretrain a ConvNet on a very large dataset (e.g. ImageNet, which
+    contains 1.2 million images with 1000 categories), and then use the
+    ConvNet either as an initialization or a fixed feature extractor for
+    the task of interest.
+
+These two major transfer learning scenarios look as follows:
+
+-  **Finetuning the convnet**: Instead of random initializaion, we
+   initialize the network with a pretrained network, like the one that is
+   trained on imagenet 1000 dataset. Rest of the training looks as
+   usual.
+-  **ConvNet as fixed feature extractor**: Here, we will freeze the weights
+   for all of the network except that of the final fully connected
+   layer. This last fully connected layer is replaced with a new one
+   with random weights and only this layer is trained.
+
+.. code-block:: default
+
+    # License: BSD
+    # Author: Sasank Chilamkurthy
+
+    from __future__ import print_function, division
+
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    from torch.optim import lr_scheduler
+    import numpy as np
+    import torchvision
+    from torchvision import datasets, models, transforms
+    import matplotlib.pyplot as plt
+    import time
+    import os
+    import copy
+
+    plt.ion()   # interactive mode
+
+
+
+
+
+
+
+Load Data
+---------
+
+We will use torchvision and torch.utils.data packages for loading the
+data.
+
+The problem we're going to solve today is to train a model to classify
+**ants** and **bees**. We have about 120 training images each for ants and bees.
+There are 75 validation images for each class. Usually, this is a very
+small dataset to generalize upon, if trained from scratch. Since we
+are using transfer learning, we should be able to generalize reasonably
+well.
+
+This dataset is a very small subset of imagenet.
+
+.. Note ::
+   Download the data from
+   `here <https://download.pytorch.org/tutorial/hymenoptera_data.zip>`_
+   and extract it to the current directory.
+
+
+.. code-block:: default
+
+
+    # Data augmentation and normalization for training
+    # Just normalization for validation
+    data_transforms = {
+        'train': transforms.Compose([
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+        'val': transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+    }
+
+    data_dir = 'data/hymenoptera_data'
+    image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
+                                              data_transforms[x])
+                      for x in ['train', 'val']}
+    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4,
+                                                 shuffle=True, num_workers=4)
+                  for x in ['train', 'val']}
+    dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
+    class_names = image_datasets['train'].classes
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
+
+
+
+
+
+Visualize a few images
+^^^^^^^^^^^^^^^^^^^^^^
+Let's visualize a few training images so as to understand the data
+augmentations.
+
+
+.. code-block:: default
+
+
+    def imshow(inp, title=None):
+        """Imshow for Tensor."""
+        inp = inp.numpy().transpose((1, 2, 0))
+        mean = np.array([0.485, 0.456, 0.406])
+        std = np.array([0.229, 0.224, 0.225])
+        inp = std * inp + mean
+        inp = np.clip(inp, 0, 1)
+        plt.imshow(inp)
+        if title is not None:
+            plt.title(title)
+        plt.pause(0.001)  # pause a bit so that plots are updated
+
+
+    # Get a batch of training data
+    inputs, classes = next(iter(dataloaders['train']))
+
+    # Make a grid from batch
+    out = torchvision.utils.make_grid(inputs)
+
+    imshow(out, title=[class_names[x] for x in classes])
+
+
+
+
+
+.. image:: /beginner/images/sphx_glr_transfer_learning_tutorial_001.png
+    :class: sphx-glr-single-img
+
+
+
+
+Training the model
+------------------
+
+Now, let's write a general function to train a model. Here, we will
+illustrate:
+
+-  Scheduling the learning rate
+-  Saving the best model
+
+In the following, parameter ``scheduler`` is an LR scheduler object from
+``torch.optim.lr_scheduler``.
+
+
+.. code-block:: default
+
+
+
+    def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
+        since = time.time()
+
+        best_model_wts = copy.deepcopy(model.state_dict())
+        best_acc = 0.0
+
+        for epoch in range(num_epochs):
+            print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+            print('-' * 10)
+
+            # Each epoch has a training and validation phase
+            for phase in ['train', 'val']:
+                if phase == 'train':
+                    model.train()  # Set model to training mode
+                else:
+                    model.eval()   # Set model to evaluate mode
+
+                running_loss = 0.0
+                running_corrects = 0
+
+                # Iterate over data.
+                for inputs, labels in dataloaders[phase]:
+                    inputs = inputs.to(device)
+                    labels = labels.to(device)
+
+                    # zero the parameter gradients
+                    optimizer.zero_grad()
+
+                    # forward
+                    # track history if only in train
+                    with torch.set_grad_enabled(phase == 'train'):
+                        outputs = model(inputs)
+                        _, preds = torch.max(outputs, 1)
+                        loss = criterion(outputs, labels)
+
+                        # backward + optimize only if in training phase
+                        if phase == 'train':
+                            loss.backward()
+                            optimizer.step()
+
+                    # statistics
+                    running_loss += loss.item() * inputs.size(0)
+                    running_corrects += torch.sum(preds == labels.data)
+                if phase == 'train':
+                    scheduler.step()
+
+                epoch_loss = running_loss / dataset_sizes[phase]
+                epoch_acc = running_corrects.double() / dataset_sizes[phase]
+
+                print('{} Loss: {:.4f} Acc: {:.4f}'.format(
+                    phase, epoch_loss, epoch_acc))
+
+                # deep copy the model
+                if phase == 'val' and epoch_acc > best_acc:
+                    best_acc = epoch_acc
+                    best_model_wts = copy.deepcopy(model.state_dict())
+
+            print()
+
+        time_elapsed = time.time() - since
+        print('Training complete in {:.0f}m {:.0f}s'.format(
+            time_elapsed // 60, time_elapsed % 60))
+        print('Best val Acc: {:4f}'.format(best_acc))
+
+        # load best model weights
+        model.load_state_dict(best_model_wts)
+        return model
+
+
+
+
+
+
+
+
+Visualizing the model predictions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Generic function to display predictions for a few images
+
+
+
+.. code-block:: default
+
+
+    def visualize_model(model, num_images=6):
+        was_training = model.training
+        model.eval()
+        images_so_far = 0
+        fig = plt.figure()
+
+        with torch.no_grad():
+            for i, (inputs, labels) in enumerate(dataloaders['val']):
+                inputs = inputs.to(device)
+                labels = labels.to(device)
+
+                outputs = model(inputs)
+                _, preds = torch.max(outputs, 1)
+
+                for j in range(inputs.size()[0]):
+                    images_so_far += 1
+                    ax = plt.subplot(num_images//2, 2, images_so_far)
+                    ax.axis('off')
+                    ax.set_title('predicted: {}'.format(class_names[preds[j]]))
+                    imshow(inputs.cpu().data[j])
+
+                    if images_so_far == num_images:
+                        model.train(mode=was_training)
+                        return
+            model.train(mode=was_training)
+
+
+
+
+
+
+
+Finetuning the convnet
+----------------------
+
+Load a pretrained model and reset final fully connected layer.
+
+
+
+.. code-block:: default
+
+
+    model_ft = models.resnet18(pretrained=True)
+    num_ftrs = model_ft.fc.in_features
+    # Here the size of each output sample is set to 2.
+    # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
+    model_ft.fc = nn.Linear(num_ftrs, 2)
+
+    model_ft = model_ft.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+
+    # Observe that all parameters are being optimized
+    optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
+
+    # Decay LR by a factor of 0.1 every 7 epochs
+    exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
+
+
+
+
+
+
+
+Train and evaluate
+^^^^^^^^^^^^^^^^^^
+
+It should take around 15-25 min on CPU. On GPU though, it takes less than a
+minute.
+
+
+
+.. code-block:: default
+
+
+    model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler,
+                           num_epochs=25)
+
+
+
+
+
+.. rst-class:: sphx-glr-script-out
+
+ Out:
+
+ .. code-block:: none
+
+    Epoch 0/24
+    ----------
+    train Loss: 0.6567 Acc: 0.6967
+    val Loss: 0.3229 Acc: 0.8889
+
+    Epoch 1/24
+    ----------
+    train Loss: 0.5948 Acc: 0.7336
+    val Loss: 0.1969 Acc: 0.9412
+
+    Epoch 2/24
+    ----------
+    train Loss: 0.4150 Acc: 0.8402
+    val Loss: 0.2588 Acc: 0.9150
+
+    Epoch 3/24
+    ----------
+    train Loss: 0.4527 Acc: 0.8238
+    val Loss: 0.2312 Acc: 0.9346
+
+    Epoch 4/24
+    ----------
+    train Loss: 0.5157 Acc: 0.8156
+    val Loss: 0.3275 Acc: 0.8693
+
+    Epoch 5/24
+    ----------
+    train Loss: 0.5087 Acc: 0.7623
+    val Loss: 0.2670 Acc: 0.9020
+
+    Epoch 6/24
+    ----------
+    train Loss: 0.4585 Acc: 0.8156
+    val Loss: 0.1689 Acc: 0.9346
+
+    Epoch 7/24
+    ----------
+    train Loss: 0.3337 Acc: 0.8402
+    val Loss: 0.1575 Acc: 0.9281
+
+    Epoch 8/24
+    ----------
+    train Loss: 0.2701 Acc: 0.8730
+    val Loss: 0.1475 Acc: 0.9412
+
+    Epoch 9/24
+    ----------
+    train Loss: 0.3255 Acc: 0.8443
+    val Loss: 0.1745 Acc: 0.9281
+
+    Epoch 10/24
+    ----------
+    train Loss: 0.2576 Acc: 0.8893
+    val Loss: 0.1607 Acc: 0.9346
+
+    Epoch 11/24
+    ----------
+    train Loss: 0.3904 Acc: 0.8443
+    val Loss: 0.1533 Acc: 0.9608
+
+    Epoch 12/24
+    ----------
+    train Loss: 0.2795 Acc: 0.8934
+    val Loss: 0.1522 Acc: 0.9477
+
+    Epoch 13/24
+    ----------
+    train Loss: 0.2701 Acc: 0.8811
+    val Loss: 0.1553 Acc: 0.9412
+
+    Epoch 14/24
+    ----------
+    train Loss: 0.3131 Acc: 0.8689
+    val Loss: 0.1761 Acc: 0.9477
+
+    Epoch 15/24
+    ----------
+    train Loss: 0.3001 Acc: 0.8525
+    val Loss: 0.1406 Acc: 0.9412
+
+    Epoch 16/24
+    ----------
+    train Loss: 0.3006 Acc: 0.8566
+    val Loss: 0.1473 Acc: 0.9281
+
+    Epoch 17/24
+    ----------
+    train Loss: 0.3371 Acc: 0.8402
+    val Loss: 0.1472 Acc: 0.9542
+
+    Epoch 18/24
+    ----------
+    train Loss: 0.3147 Acc: 0.8811
+    val Loss: 0.1381 Acc: 0.9542
+
+    Epoch 19/24
+    ----------
+    train Loss: 0.3374 Acc: 0.8402
+    val Loss: 0.1452 Acc: 0.9346
+
+    Epoch 20/24
+    ----------
+    train Loss: 0.2309 Acc: 0.9098
+    val Loss: 0.1732 Acc: 0.9346
+
+    Epoch 21/24
+    ----------
+    train Loss: 0.2467 Acc: 0.8811
+    val Loss: 0.1485 Acc: 0.9346
+
+    Epoch 22/24
+    ----------
+    train Loss: 0.2280 Acc: 0.9016
+    val Loss: 0.1526 Acc: 0.9346
+
+    Epoch 23/24
+    ----------
+    train Loss: 0.3162 Acc: 0.8648
+    val Loss: 0.1422 Acc: 0.9346
+
+    Epoch 24/24
+    ----------
+    train Loss: 0.2524 Acc: 0.9016
+    val Loss: 0.1450 Acc: 0.9477
+
+    Training complete in 0m 48s
+    Best val Acc: 0.960784
+
+
+
+.. code-block:: default
+
+
+    visualize_model(model_ft)
+
+
+
+
+
+.. image:: /beginner/images/sphx_glr_transfer_learning_tutorial_002.png
+    :class: sphx-glr-single-img
+
+
+
+
+ConvNet as fixed feature extractor
+----------------------------------
+
+Here, we need to freeze all the network except the final layer. We need
+to set ``requires_grad == False`` to freeze the parameters so that the
+gradients are not computed in ``backward()``.
+
+You can read more about this in the documentation
+`here <https://pytorch.org/docs/notes/autograd.html#excluding-subgraphs-from-backward>`__.
+
+
+
+.. code-block:: default
+
+
+    model_conv = torchvision.models.resnet18(pretrained=True)
+    for param in model_conv.parameters():
+        param.requires_grad = False
+
+    # Parameters of newly constructed modules have requires_grad=True by default
+    num_ftrs = model_conv.fc.in_features
+    model_conv.fc = nn.Linear(num_ftrs, 2)
+
+    model_conv = model_conv.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+
+    # Observe that only parameters of final layer are being optimized as
+    # opposed to before.
+    optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=0.001, momentum=0.9)
+
+    # Decay LR by a factor of 0.1 every 7 epochs
+    exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
+
+
+
+
+
+
+
+
+Train and evaluate
+^^^^^^^^^^^^^^^^^^
+
+On CPU this will take about half the time compared to previous scenario.
+This is expected as gradients don't need to be computed for most of the
+network. However, forward does need to be computed.
+
+
+
+.. code-block:: default
+
+
+    model_conv = train_model(model_conv, criterion, optimizer_conv,
+                             exp_lr_scheduler, num_epochs=25)
+
+
+
+
+
+.. rst-class:: sphx-glr-script-out
+
+ Out:
+
+ .. code-block:: none
+
+    Epoch 0/24
+    ----------
+    train Loss: 0.6548 Acc: 0.6434
+    val Loss: 0.3279 Acc: 0.8627
+
+    Epoch 1/24
+    ----------
+    train Loss: 0.4907 Acc: 0.7787
+    val Loss: 0.3273 Acc: 0.8366
+
+    Epoch 2/24
+    ----------
+    train Loss: 0.4351 Acc: 0.8033
+    val Loss: 0.2670 Acc: 0.8758
+
+    Epoch 3/24
+    ----------
+    train Loss: 0.5002 Acc: 0.8033
+    val Loss: 0.1670 Acc: 0.9542
+
+    Epoch 4/24
+    ----------
+    train Loss: 0.5262 Acc: 0.7828
+    val Loss: 0.1780 Acc: 0.9542
+
+    Epoch 5/24
+    ----------
+    train Loss: 0.4103 Acc: 0.7992
+    val Loss: 0.2593 Acc: 0.8889
+
+    Epoch 6/24
+    ----------
+    train Loss: 0.6280 Acc: 0.7377
+    val Loss: 0.1740 Acc: 0.9542
+
+    Epoch 7/24
+    ----------
+    train Loss: 0.3855 Acc: 0.8238
+    val Loss: 0.1810 Acc: 0.9542
+
+    Epoch 8/24
+    ----------
+    train Loss: 0.4041 Acc: 0.8033
+    val Loss: 0.1905 Acc: 0.9346
+
+    Epoch 9/24
+    ----------
+    train Loss: 0.4469 Acc: 0.8156
+    val Loss: 0.1858 Acc: 0.9346
+
+    Epoch 10/24
+    ----------
+    train Loss: 0.3172 Acc: 0.8689
+    val Loss: 0.1610 Acc: 0.9608
+
+    Epoch 11/24
+    ----------
+    train Loss: 0.3104 Acc: 0.8402
+    val Loss: 0.1924 Acc: 0.9346
+
+    Epoch 12/24
+    ----------
+    train Loss: 0.4036 Acc: 0.8361
+    val Loss: 0.1846 Acc: 0.9477
+
+    Epoch 13/24
+    ----------
+    train Loss: 0.3462 Acc: 0.8361
+    val Loss: 0.1869 Acc: 0.9281
+
+    Epoch 14/24
+    ----------
+    train Loss: 0.4521 Acc: 0.8033
+    val Loss: 0.1832 Acc: 0.9346
+
+    Epoch 15/24
+    ----------
+    train Loss: 0.3577 Acc: 0.8238
+    val Loss: 0.1862 Acc: 0.9608
+
+    Epoch 16/24
+    ----------
+    train Loss: 0.3645 Acc: 0.8730
+    val Loss: 0.1906 Acc: 0.9542
+
+    Epoch 17/24
+    ----------
+    train Loss: 0.3366 Acc: 0.8607
+    val Loss: 0.1729 Acc: 0.9477
+
+    Epoch 18/24
+    ----------
+    train Loss: 0.3793 Acc: 0.8279
+    val Loss: 0.2263 Acc: 0.8954
+
+    Epoch 19/24
+    ----------
+    train Loss: 0.3282 Acc: 0.8607
+    val Loss: 0.1634 Acc: 0.9608
+
+    Epoch 20/24
+    ----------
+    train Loss: 0.2573 Acc: 0.8975
+    val Loss: 0.2018 Acc: 0.9346
+
+    Epoch 21/24
+    ----------
+    train Loss: 0.3195 Acc: 0.8893
+    val Loss: 0.1804 Acc: 0.9542
+
+    Epoch 22/24
+    ----------
+    train Loss: 0.3004 Acc: 0.8770
+    val Loss: 0.1810 Acc: 0.9608
+
+    Epoch 23/24
+    ----------
+    train Loss: 0.2837 Acc: 0.8893
+    val Loss: 0.1755 Acc: 0.9608
+
+    Epoch 24/24
+    ----------
+    train Loss: 0.4070 Acc: 0.8156
+    val Loss: 0.2219 Acc: 0.9085
+
+    Training complete in 0m 37s
+    Best val Acc: 0.960784
+
+
+
+.. code-block:: default
+
+
+    visualize_model(model_conv)
+
+    plt.ioff()
+    plt.show()
+
+
+
+
+.. image:: /beginner/images/sphx_glr_transfer_learning_tutorial_003.png
+    :class: sphx-glr-single-img
+
+
+
+
+Further Learning
+-----------------
+
+If you would like to learn more about the applications of transfer learning,
+checkout our `Quantized Transfer Learning for Computer Vision Tutorial <https://pytorch.org/tutorials/intermediate/quantized_transfer_learning_tutorial.html>`_.
+
+
+
+
+.. rst-class:: sphx-glr-timing
+
+   **Total running time of the script:** ( 1 minutes  30.022 seconds)
+
+
+.. _sphx_glr_download_beginner_transfer_learning_tutorial.py:
+
+
+.. only :: html
+
+ .. container:: sphx-glr-footer
+    :class: sphx-glr-footer-example
+
+
+
+  .. container:: sphx-glr-download
+
+     :download:`Download Python source code: transfer_learning_tutorial.py <transfer_learning_tutorial.py>`
+
+
+
+  .. container:: sphx-glr-download
+
+     :download:`Download Jupyter notebook: transfer_learning_tutorial.ipynb <transfer_learning_tutorial.ipynb>`
+
+
+.. only:: html
+
+ .. rst-class:: sphx-glr-signature
+
+    `Gallery generated by Sphinx-Gallery <https://sphinx-gallery.readthedocs.io>`_

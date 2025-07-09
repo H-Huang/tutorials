@@ -1,6 +1,8 @@
 Dynamic Parallelism in TorchScript
 ==================================
 
+.. warning:: TorchScript is no longer in active development.
+
 In this tutorial, we introduce the syntax for doing *dynamic inter-op parallelism*
 in TorchScript. This parallelism has the following properties:
 
@@ -207,6 +209,7 @@ Let's use the profiler along with the Chrome trace export functionality to
 visualize the performance of our parallelized model:
 
 .. code-block:: python
+
     with torch.autograd.profiler.profile() as prof:
         ens(x)
     prof.export_chrome_trace('parallel.json')

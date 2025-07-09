@@ -31,28 +31,28 @@ Chatbot Tutorial
 #    :align: center
 #    :alt: bot
 #
-# .. code:: python
+# .. code-block:: python
 #
-#   > hello?
-#   Bot: hello .
-#   > where am I?
-#   Bot: you re in a hospital .
-#   > who are you?
-#   Bot: i m a lawyer .
-#   > how are you doing?
-#   Bot: i m fine .
-#   > are you my friend?
-#   Bot: no .
-#   > you're under arrest
-#   Bot: i m trying to help you !
-#   > i'm just kidding
-#   Bot: i m sorry .
-#   > where are you from?
-#   Bot: san francisco .
-#   > it's time for me to leave
-#   Bot: i know .
-#   > goodbye
-#   Bot: goodbye .
+#    > hello?
+#    Bot: hello .
+#    > where am I?
+#    Bot: you re in a hospital .
+#    > who are you?
+#    Bot: i m a lawyer .
+#    > how are you doing?
+#    Bot: i m fine .
+#    > are you my friend?
+#    Bot: no .
+#    > you're under arrest
+#    Bot: i m trying to help you !
+#    > i'm just kidding
+#    Bot: i m sorry .
+#    > where are you from?
+#    Bot: san francisco .
+#    > it's time for me to leave
+#    Bot: i know .
+#    > goodbye
+#    Bot: goodbye .
 #
 # **Tutorial Highlights**
 #
@@ -65,7 +65,7 @@ Chatbot Tutorial
 # -  Implement greedy-search decoding module
 # -  Interact with trained chatbot
 #
-# **Acknowledgements**
+# **Acknowledgments**
 #
 # This tutorial borrows code from the following sources:
 #
@@ -75,7 +75,7 @@ Chatbot Tutorial
 # 2) Sean Robertson’s practical-pytorch seq2seq-translation example:
 #    https://github.com/spro/practical-pytorch/tree/master/seq2seq-translation
 #
-# 3) FloydHub’s Cornell Movie Corpus preprocessing code:
+# 3) FloydHub Cornell Movie Corpus preprocessing code:
 #    https://github.com/floydhub/textutil-preprocess-cornell-movie-corpus
 #
 
@@ -84,17 +84,12 @@ Chatbot Tutorial
 # Preparations
 # ------------
 #
-# To start, Download the data ZIP file
-# `here <https://www.cs.cornell.edu/~cristian/Cornell_Movie-Dialogs_Corpus.html>`__
+# To get started, `download <https://zissou.infosci.cornell.edu/convokit/datasets/movie-corpus/movie-corpus.zip>`__ the Movie-Dialogs Corpus zip file.
+
 # and put in a ``data/`` directory under the current directory.
 #
 # After that, let’s import some necessities.
 #
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import torch
 from torch.jit import script, trace
@@ -110,10 +105,13 @@ import codecs
 from io import open
 import itertools
 import math
+import json
 
 
-USE_CUDA = torch.cuda.is_available()
-device = torch.device("cuda" if USE_CUDA else "cpu")
+# If the current `accelerator <https://pytorch.org/docs/stable/torch.html#accelerators>`__ is available,
+# we will use it. Otherwise, we use the CPU.
+device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+print(f"Using {device} device")
 
 
 ######################################################################
@@ -140,7 +138,7 @@ device = torch.device("cuda" if USE_CUDA else "cpu")
 # original format.
 #
 
-corpus_name = "cornell movie-dialogs corpus"
+corpus_name = "movie-corpus"
 corpus = os.path.join("data", corpus_name)
 
 def printLines(file, n=10):
@@ -149,7 +147,7 @@ def printLines(file, n=10):
     for line in lines[:n]:
         print(line)
 
-printLines(os.path.join(corpus, "movie_lines.txt"))
+printLines(os.path.join(corpus, "utterances.jsonl"))
 
 
 ######################################################################
@@ -160,55 +158,47 @@ printLines(os.path.join(corpus, "movie_lines.txt"))
 # contains a tab-separated *query sentence* and a *response sentence* pair.
 #
 # The following functions facilitate the parsing of the raw
-# *movie_lines.txt* data file.
+# ``utterances.jsonl`` data file.
 #
-# -  ``loadLines`` splits each line of the file into a dictionary of
-#    fields (lineID, characterID, movieID, character, text)
-# -  ``loadConversations`` groups fields of lines from ``loadLines`` into
-#    conversations based on *movie_conversations.txt*
+# -  ``loadLinesAndConversations`` splits each line of the file into a dictionary of
+#    lines with fields: ``lineID``, ``characterID``, and text and then groups them
+#    into conversations with fields: ``conversationID``, ``movieID``, and lines.
 # -  ``extractSentencePairs`` extracts pairs of sentences from
 #    conversations
 #
 
-# Splits each line of the file into a dictionary of fields
-def loadLines(fileName, fields):
+# Splits each line of the file to create lines and conversations
+def loadLinesAndConversations(fileName):
     lines = {}
+    conversations = {}
     with open(fileName, 'r', encoding='iso-8859-1') as f:
         for line in f:
-            values = line.split(" +++$+++ ")
-            # Extract fields
+            lineJson = json.loads(line)
+            # Extract fields for line object
             lineObj = {}
-            for i, field in enumerate(fields):
-                lineObj[field] = values[i]
+            lineObj["lineID"] = lineJson["id"]
+            lineObj["characterID"] = lineJson["speaker"]
+            lineObj["text"] = lineJson["text"]
             lines[lineObj['lineID']] = lineObj
-    return lines
 
+            # Extract fields for conversation object
+            if lineJson["conversation_id"] not in conversations:
+                convObj = {}
+                convObj["conversationID"] = lineJson["conversation_id"]
+                convObj["movieID"] = lineJson["meta"]["movie_id"]
+                convObj["lines"] = [lineObj]
+            else:
+                convObj = conversations[lineJson["conversation_id"]]
+                convObj["lines"].insert(0, lineObj)
+            conversations[convObj["conversationID"]] = convObj
 
-# Groups fields of lines from `loadLines` into conversations based on *movie_conversations.txt*
-def loadConversations(fileName, lines, fields):
-    conversations = []
-    with open(fileName, 'r', encoding='iso-8859-1') as f:
-        for line in f:
-            values = line.split(" +++$+++ ")
-            # Extract fields
-            convObj = {}
-            for i, field in enumerate(fields):
-                convObj[field] = values[i]
-            # Convert string to list (convObj["utteranceIDs"] == "['L598485', 'L598486', ...]")
-            utterance_id_pattern = re.compile('L[0-9]+')
-            lineIds = utterance_id_pattern.findall(convObj["utteranceIDs"])
-            # Reassemble lines
-            convObj["lines"] = []
-            for lineId in lineIds:
-                convObj["lines"].append(lines[lineId])
-            conversations.append(convObj)
-    return conversations
+    return lines, conversations
 
 
 # Extracts pairs of sentences from conversations
 def extractSentencePairs(conversations):
     qa_pairs = []
-    for conversation in conversations:
+    for conversation in conversations.values():
         # Iterate over all the lines of the conversation
         for i in range(len(conversation["lines"]) - 1):  # We ignore the last line (no answer for it)
             inputLine = conversation["lines"][i]["text"].strip()
@@ -221,7 +211,7 @@ def extractSentencePairs(conversations):
 
 ######################################################################
 # Now we’ll call these functions and create the file. We’ll call it
-# *formatted_movie_lines.txt*.
+# ``formatted_movie_lines.txt``.
 #
 
 # Define path to new file
@@ -231,18 +221,12 @@ delimiter = '\t'
 # Unescape the delimiter
 delimiter = str(codecs.decode(delimiter, "unicode_escape"))
 
-# Initialize lines dict, conversations list, and field ids
+# Initialize lines dict and conversations dict
 lines = {}
-conversations = []
-MOVIE_LINES_FIELDS = ["lineID", "characterID", "movieID", "character", "text"]
-MOVIE_CONVERSATIONS_FIELDS = ["character1ID", "character2ID", "movieID", "utteranceIDs"]
-
-# Load lines and process conversations
-print("\nProcessing corpus...")
-lines = loadLines(os.path.join(corpus, "movie_lines.txt"), MOVIE_LINES_FIELDS)
-print("\nLoading conversations...")
-conversations = loadConversations(os.path.join(corpus, "movie_conversations.txt"),
-                                  lines, MOVIE_CONVERSATIONS_FIELDS)
+conversations = {}
+# Load lines and conversations
+print("\nProcessing corpus into lines and conversations...")
+lines, conversations = loadLinesAndConversations(os.path.join(corpus, "utterances.jsonl"))
 
 # Write new csv file
 print("\nWriting newly formatted file...")
@@ -371,12 +355,12 @@ def readVocs(datafile, corpus_name):
     voc = Voc(corpus_name)
     return voc, pairs
 
-# Returns True iff both sentences in a pair 'p' are under the MAX_LENGTH threshold
+# Returns True if both sentences in a pair 'p' are under the MAX_LENGTH threshold
 def filterPair(p):
     # Input sequences need to preserve the last word for EOS token
     return len(p[0].split(' ')) < MAX_LENGTH and len(p[1].split(' ')) < MAX_LENGTH
 
-# Filter pairs using filterPair condition
+# Filter pairs using the ``filterPair`` condition
 def filterPairs(pairs):
     return [pair for pair in pairs if filterPair(pair)]
 
@@ -471,7 +455,7 @@ pairs = trimRareWords(voc, pairs, MIN_COUNT)
 # with mini-batches.
 #
 # Using mini-batches also means that we must be mindful of the variation
-# of sentence length in our batches. To accomodate sentences of different
+# of sentence length in our batches. To accommodate sentences of different
 # sizes in the same batch, we will make our batched input tensor of shape
 # *(max_length, batch_size)*, where sentences shorter than the
 # *max_length* are zero padded after an *EOS_token*.
@@ -615,7 +599,7 @@ print("max_target_len:", max_target_len)
 # in normal sequential order, and one that is fed the input sequence in
 # reverse order. The outputs of each network are summed at each time step.
 # Using a bidirectional GRU will give us the advantage of encoding both
-# past and future context.
+# past and future contexts.
 #
 # Bidirectional RNN:
 #
@@ -671,7 +655,7 @@ class EncoderRNN(nn.Module):
         self.hidden_size = hidden_size
         self.embedding = embedding
 
-        # Initialize GRU; the input_size and hidden_size params are both set to 'hidden_size'
+        # Initialize GRU; the input_size and hidden_size parameters are both set to 'hidden_size'
         #   because our input size is a word embedding with number of features == hidden_size
         self.gru = nn.GRU(hidden_size, hidden_size, n_layers,
                           dropout=(0 if n_layers == 1 else dropout), bidirectional=True)
@@ -700,7 +684,7 @@ class EncoderRNN(nn.Module):
 # states to generate the next word in the sequence. It continues
 # generating words until it outputs an *EOS_token*, representing the end
 # of the sentence. A common problem with a vanilla seq2seq decoder is that
-# if we rely soley on the context vector to encode the entire input
+# if we rely solely on the context vector to encode the entire input
 # sequence’s meaning, it is likely that we will have information loss.
 # This is especially the case when dealing with long input sequences,
 # greatly limiting the capability of our decoder.
@@ -950,7 +934,7 @@ def maskNLLLoss(inp, target, mask):
 #   sequence (or batch of sequences). We use the ``GRU`` layer like this in
 #   the ``encoder``. The reality is that under the hood, there is an
 #   iterative process looping over each time step calculating hidden states.
-#   Alternatively, you ran run these modules one time-step at a time. In
+#   Alternatively, you can run these modules one time-step at a time. In
 #   this case, we manually loop over the sequences during the training
 #   process like we must do for the ``decoder`` model. As long as you
 #   maintain the correct conceptual model of these modules, implementing
@@ -970,7 +954,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
     input_variable = input_variable.to(device)
     target_variable = target_variable.to(device)
     mask = mask.to(device)
-    # Lengths for rnn packing should always be on the cpu
+    # Lengths for RNN packing should always be on the CPU
     lengths = lengths.to("cpu")
 
     # Initialize variables
@@ -1019,7 +1003,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
             print_losses.append(mask_loss.item() * nTotal)
             n_totals += nTotal
 
-    # Perform backpropatation
+    # Perform backpropagation
     loss.backward()
 
     # Clip gradients: gradients are modified in place
@@ -1044,8 +1028,8 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
 # lifting with the ``train`` function.
 #
 # One thing to note is that when we save our model, we save a tarball
-# containing the encoder and decoder state_dicts (parameters), the
-# optimizers’ state_dicts, the loss, the iteration, etc. Saving the model
+# containing the encoder and decoder ``state_dicts`` (parameters), the
+# optimizers’ ``state_dicts``, the loss, the iteration, etc. Saving the model
 # in this way will give us the ultimate flexibility with the checkpoint.
 # After loading a checkpoint, we will be able to use the model parameters
 # to run inference, or we can continue training right where we left off.
@@ -1115,7 +1099,7 @@ def trainIters(model_name, voc, pairs, encoder, decoder, encoder_optimizer, deco
 # softmax value. This decoding method is optimal on a single time-step
 # level.
 #
-# To facilite the greedy decoding operation, we define a
+# To facilitate the greedy decoding operation, we define a
 # ``GreedySearchDecoder`` class. When run, an object of this class takes
 # an input sequence (``input_seq``) of shape *(input_seq length, 1)*, a
 # scalar input length (``input_length``) tensor, and a ``max_length`` to
@@ -1146,7 +1130,7 @@ class GreedySearchDecoder(nn.Module):
         # Forward input through encoder model
         encoder_outputs, encoder_hidden = self.encoder(input_seq, input_length)
         # Prepare encoder's final hidden layer to be first hidden input to the decoder
-        decoder_hidden = encoder_hidden[:decoder.n_layers]
+        decoder_hidden = encoder_hidden[:self.decoder.n_layers]
         # Initialize decoder input with SOS_token
         decoder_input = torch.ones(1, 1, device=device, dtype=torch.long) * SOS_token
         # Initialize tensors to append decoded words to
@@ -1207,7 +1191,7 @@ def evaluate(encoder, decoder, searcher, voc, sentence, max_length=MAX_LENGTH):
     input_batch = torch.LongTensor(indexes_batch).transpose(0, 1)
     # Use appropriate device
     input_batch = input_batch.to(device)
-    lengths = lengths.to(device)
+    lengths = lengths.to("cpu")
     # Decode sentence with searcher
     tokens, scores = searcher(input_batch, lengths, max_length)
     # indexes -> words
@@ -1252,8 +1236,8 @@ def evaluateInput(encoder, decoder, searcher, voc):
 # Configure models
 model_name = 'cb_model'
 attn_model = 'dot'
-#attn_model = 'general'
-#attn_model = 'concat'
+#``attn_model = 'general'``
+#``attn_model = 'concat'``
 hidden_size = 500
 encoder_n_layers = 2
 decoder_n_layers = 2
@@ -1263,12 +1247,17 @@ batch_size = 64
 # Set checkpoint to load from; set to None if starting from scratch
 loadFilename = None
 checkpoint_iter = 4000
-#loadFilename = os.path.join(save_dir, model_name, corpus_name,
-#                            '{}-{}_{}'.format(encoder_n_layers, decoder_n_layers, hidden_size),
-#                            '{}_checkpoint.tar'.format(checkpoint_iter))
 
+#############################################################
+# Sample code to load from a checkpoint:
+#
+# .. code-block:: python
+#
+#    loadFilename = os.path.join(save_dir, model_name, corpus_name,
+#                        '{}-{}_{}'.format(encoder_n_layers, decoder_n_layers, hidden_size),
+#                        '{}_checkpoint.tar'.format(checkpoint_iter))
 
-# Load model if a loadFilename is provided
+# Load model if a ``loadFilename`` is provided
 if loadFilename:
     # If loading on same machine the model was trained on
     checkpoint = torch.load(loadFilename)
@@ -1331,17 +1320,17 @@ if loadFilename:
     encoder_optimizer.load_state_dict(encoder_optimizer_sd)
     decoder_optimizer.load_state_dict(decoder_optimizer_sd)
 
-# If you have cuda, configure cuda to call
+# If you have an accelerator, configure it to call
 for state in encoder_optimizer.state.values():
     for k, v in state.items():
         if isinstance(v, torch.Tensor):
-            state[k] = v.cuda()
+            state[k] = v.to(device)
 
 for state in decoder_optimizer.state.values():
     for k, v in state.items():
         if isinstance(v, torch.Tensor):
-            state[k] = v.cuda()
-    
+            state[k] = v.to(device)
+
 # Run training iterations
 print("Starting Training!")
 trainIters(model_name, voc, pairs, encoder, decoder, encoder_optimizer, decoder_optimizer,
@@ -1356,7 +1345,7 @@ trainIters(model_name, voc, pairs, encoder, decoder, encoder_optimizer, decoder_
 # To chat with your model, run the following block.
 #
 
-# Set dropout layers to eval mode
+# Set dropout layers to ``eval`` mode
 encoder.eval()
 decoder.eval()
 

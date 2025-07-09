@@ -1,7 +1,7 @@
 """
 `Learn the Basics <intro.html>`_ ||
-`Quickstart <quickstart_tutorial.html>`_ || 
-`Tensors <tensorqs_tutorial.html>`_ || 
+`Quickstart <quickstart_tutorial.html>`_ ||
+`Tensors <tensorqs_tutorial.html>`_ ||
 `Datasets & DataLoaders <data_tutorial.html>`_ ||
 `Transforms <transforms_tutorial.html>`_ ||
 `Build Model <buildmodel_tutorial.html>`_ ||
@@ -16,7 +16,6 @@ In this section we will look at how to persist model state with saving, loading 
 """
 
 import torch
-import torch.onnx as onnx
 import torchvision.models as models
 
 
@@ -27,15 +26,20 @@ import torchvision.models as models
 # state dictionary, called ``state_dict``. These can be persisted via the ``torch.save``
 # method:
 
-model = models.vgg16(pretrained=True)
+model = models.vgg16(weights='IMAGENET1K_V1')
 torch.save(model.state_dict(), 'model_weights.pth')
 
 ##########################
-# To load model weights, you need to create an instance of the same model first, and then load the parameters 
+# To load model weights, you need to create an instance of the same model first, and then load the parameters
 # using ``load_state_dict()`` method.
+#
+# In the code below, we set ``weights_only=True`` to limit the
+# functions executed during unpickling to only those necessary for
+# loading weights. Using ``weights_only=True`` is considered
+# a best practice when loading weights.
 
-model = models.vgg16() # we do not specify pretrained=True, i.e. do not load default weights
-model.load_state_dict(torch.load('model_weights.pth'))
+model = models.vgg16() # we do not specify ``weights``, i.e. create untrained model
+model.load_state_dict(torch.load('model_weights.pth', weights_only=True))
 model.eval()
 
 ###########################
@@ -44,40 +48,27 @@ model.eval()
 #######################################################################
 # Saving and Loading Models with Shapes
 # -------------------------------------
-# When loading model weights, we needed to instantiate the model class first, because the class 
-# defines the structure of a network. We might want to save the structure of this class together with 
+# When loading model weights, we needed to instantiate the model class first, because the class
+# defines the structure of a network. We might want to save the structure of this class together with
 # the model, in which case we can pass ``model`` (and not ``model.state_dict()``) to the saving function:
 
 torch.save(model, 'model.pth')
 
 ########################
-# We can then load the model like this:
+# We can then load the model as demonstrated below.
+#
+# As described in `Saving and loading torch.nn.Modules <https://pytorch.org/docs/main/notes/serialization.html#saving-and-loading-torch-nn-modules>`_,
+# saving ``state_dict`` is considered the best practice. However,
+# below we use ``weights_only=False`` because this involves loading the
+# model, which is a legacy use case for ``torch.save``.
 
-model = torch.load('model.pth')
+model = torch.load('model.pth', weights_only=False),
 
 ########################
 # .. note:: This approach uses Python `pickle <https://docs.python.org/3/library/pickle.html>`_ module when serializing the model, thus it relies on the actual class definition to be available when loading the model.
 
-#######################################################################
-# Exporting Model to ONNX
-# -----------------------
-# PyTorch also has native ONNX export support. Given the dynamic nature of the
-# PyTorch execution graph, however, the export process must
-# traverse the execution graph to produce a persisted ONNX model. For this reason, a
-# test variable of the appropriate size should be passed in to the
-# export routine (in our case, we will create a dummy zero tensor of the correct size):
-
-input_image = torch.zeros((1,3,224,224))
-onnx.export(model, input_image, 'model.onnx')
-
-###########################
-# There are a lot of things you can do with ONNX model, including running inference on different platforms 
-# and in different programming languages. For more details, we recommend 
-# visiting `ONNX tutorial <https://github.com/onnx/tutorials>`_.
-#
-# Congratulations! You have completed the PyTorch beginner tutorial! Try 
-# `revisting the first page <quickstart_tutorial.html>`_ to see the tutorial in its entirety
-# again. We hope this tutorial has helped you get started with deep learning on PyTorch. 
-# Good luck!
-#
-
+#######################
+# Related Tutorials
+# -----------------
+# - `Saving and Loading a General Checkpoint in PyTorch <https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html>`_
+# - `Tips for loading an nn.Module from a checkpoint <https://pytorch.org/tutorials/recipes/recipes/module_load_state_dict_tips.html?highlight=loading%20nn%20module%20from%20checkpoint>`_

@@ -3,7 +3,7 @@ beginner
 intermediate
 advanced
 pytorch_basics
-recipes
+/recipes
 prototype
 
 #data things
@@ -121,3 +121,9 @@ cleanup.sh
 
 # PyTorch things
 *.pt
+
+# VSCode
+*.vscode
+
+# pyspelling
+dictionary.dic

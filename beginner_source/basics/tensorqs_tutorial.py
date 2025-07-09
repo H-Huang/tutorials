@@ -1,7 +1,7 @@
 """
 `Learn the Basics <intro.html>`_ ||
-`Quickstart <quickstart_tutorial.html>`_ || 
-**Tensors** || 
+`Quickstart <quickstart_tutorial.html>`_ ||
+**Tensors** ||
 `Datasets & DataLoaders <data_tutorial.html>`_ ||
 `Transforms <transforms_tutorial.html>`_ ||
 `Build Model <buildmodel_tutorial.html>`_ ||
@@ -9,15 +9,15 @@
 `Optimization <optimization_tutorial.html>`_ ||
 `Save & Load Model <saveloadrun_tutorial.html>`_
 
-Tensors 
+Tensors
 ==========================
 
-Tensors are a specialized data structure that are very similar to arrays and matrices. 
+Tensors are a specialized data structure that are very similar to arrays and matrices.
 In PyTorch, we use tensors to encode the inputs and outputs of a model, as well as the model’s parameters.
 
 Tensors are similar to `NumPy’s <https://numpy.org/>`_ ndarrays, except that tensors can run on GPUs or other hardware accelerators. In fact, tensors and
-NumPy arrays can often share the same underlying memory, eliminating the need to copy data (see :ref:`bridge-to-np-label`). Tensors 
-are also optimized for automatic differentiation (we'll see more about that later in the `Autograd <autogradqs_tutorial.html>`__ 
+NumPy arrays can often share the same underlying memory, eliminating the need to copy data (see :ref:`bridge-to-np-label`). Tensors
+are also optimized for automatic differentiation (we'll see more about that later in the `Autograd <autogradqs_tutorial.html>`__
 section). If you’re familiar with ndarrays, you’ll be right at home with the Tensor API. If not, follow along!
 """
 
@@ -80,7 +80,7 @@ print(f"Zeros Tensor: \n {zeros_tensor}")
 
 ######################################################################
 # Attributes of a Tensor
-# ~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~
 #
 # Tensor attributes describe their shape, datatype, and the device on which they are stored.
 
@@ -97,22 +97,22 @@ print(f"Device tensor is stored on: {tensor.device}")
 
 ######################################################################
 # Operations on Tensors
-# ~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~
 #
-# Over 100 tensor operations, including arithmetic, linear algebra, matrix manipulation (transposing, 
+# Over 1200 tensor operations, including arithmetic, linear algebra, matrix manipulation (transposing,
 # indexing, slicing), sampling and more are
 # comprehensively described `here <https://pytorch.org/docs/stable/torch.html>`__.
 #
-# Each of these operations can be run on the GPU (at typically higher speeds than on a
-# CPU). If you’re using Colab, allocate a GPU by going to Runtime > Change runtime type > GPU.
-# 
-# By default, tensors are created on the CPU. We need to explicitly move tensors to the GPU using 
-# ``.to`` method (after checking for GPU availability). Keep in mind that copying large tensors
+# Each of these operations can be run on the CPU and `Accelerator <https://pytorch.org/docs/stable/torch.html#accelerators>`__
+# such as CUDA, MPS, MTIA, or XPU. If you’re using Colab, allocate an accelerator by going to Runtime > Change runtime type > GPU.
+#
+# By default, tensors are created on the CPU. We need to explicitly move tensors to the accelerator using
+# ``.to`` method (after checking for accelerator availability). Keep in mind that copying large tensors
 # across devices can be expensive in terms of time and memory!
 
-# We move our tensor to the GPU if available
-if torch.cuda.is_available():
-  tensor = tensor.to('cuda')
+# We move our tensor to the current accelerator if available
+if torch.accelerator.is_available():
+    tensor = tensor.to(torch.accelerator.current_accelerator())
 
 
 ######################################################################
@@ -124,16 +124,16 @@ if torch.cuda.is_available():
 # **Standard numpy-like indexing and slicing:**
 
 tensor = torch.ones(4, 4)
-print('First row: ',tensor[0])
-print('First column: ', tensor[:, 0])
-print('Last column:', tensor[..., -1])
+print(f"First row: {tensor[0]}")
+print(f"First column: {tensor[:, 0]}")
+print(f"Last column: {tensor[..., -1]}")
 tensor[:,1] = 0
 print(tensor)
 
 ######################################################################
 # **Joining tensors** You can use ``torch.cat`` to concatenate a sequence of tensors along a given dimension.
 # See also `torch.stack <https://pytorch.org/docs/stable/generated/torch.stack.html>`__,
-# another tensor joining op that is subtly different from ``torch.cat``.
+# another tensor joining operator that is subtly different from ``torch.cat``.
 t1 = torch.cat([tensor, tensor, tensor], dim=1)
 print(t1)
 
@@ -142,10 +142,11 @@ print(t1)
 # **Arithmetic operations**
 
 # This computes the matrix multiplication between two tensors. y1, y2, y3 will have the same value
+# ``tensor.T`` returns the transpose of a tensor
 y1 = tensor @ tensor.T
 y2 = tensor.matmul(tensor.T)
 
-y3 = torch.rand_like(tensor)
+y3 = torch.rand_like(y1)
 torch.matmul(tensor, tensor.T, out=y3)
 
 
@@ -163,16 +164,16 @@ torch.mul(tensor, tensor, out=z3)
 # numerical value using ``item()``:
 
 agg = tensor.sum()
-agg_item = agg.item()  
+agg_item = agg.item()
 print(agg_item, type(agg_item))
 
 
 ######################################################################
 # **In-place operations**
-# Operations that store the result into the operand are called in-place. They are denoted by a ``_`` suffix. 
+# Operations that store the result into the operand are called in-place. They are denoted by a ``_`` suffix.
 # For example: ``x.copy_(y)``, ``x.t_()``, will change ``x``.
 
-print(tensor, "\n")
+print(f"{tensor} \n")
 tensor.add_(5)
 print(tensor)
 

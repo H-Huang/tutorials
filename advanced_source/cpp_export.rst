@@ -1,6 +1,8 @@
 Loading a TorchScript Model in C++
 =====================================
 
+.. warning:: TorchScript is no longer in active development.
+
 As its name suggests, the primary interface to PyTorch is the Python
 programming language. While Python is a suitable and preferred language for
 many scenarios requiring dynamism and ease of iteration, there are equally many
@@ -203,7 +205,7 @@ minimal ``CMakeLists.txt`` to build it could look as simple as:
 
   add_executable(example-app example-app.cpp)
   target_link_libraries(example-app "${TORCH_LIBRARIES}")
-  set_property(TARGET example-app PROPERTY CXX_STANDARD 14)
+  set_property(TARGET example-app PROPERTY CXX_STANDARD 17)
 
 The last thing we need to build the example application is the LibTorch
 distribution. You can always grab the latest stable release from the `download

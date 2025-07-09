@@ -1,6 +1,8 @@
 Extending TorchScript with Custom C++ Classes
 ===============================================
 
+.. warning:: TorchScript is no longer in active development.
+
 This tutorial is a follow-on to the
 :doc:`custom operator <torch_script_custom_ops>`
 tutorial, and introduces the API we've built for binding C++ classes into TorchScript
@@ -329,7 +331,7 @@ Once this is done, you can use the op like the following example:
           self.f = torch.classes.my_classes.MyStackClass(["foo", "bar"])
 
       def forward(self):
-          return torch.ops.foo.manipulate_instance(self.f)
+          return torch.ops.my_classes.manipulate_instance(self.f)
 
 .. note::
 

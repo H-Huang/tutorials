@@ -31,14 +31,6 @@ Recipes are bite-sized, actionable examples of how to use specific PyTorch featu
 .. Basics
 
 .. customcarditem::
-   :header: Loading data in PyTorch
-   :card_description: Learn how to use PyTorch packages to prepare and load common datasets for your model.
-   :image: ../_static/img/thumbnails/cropped/loading-data.PNG
-   :link: ../recipes/recipes/loading_data_recipe.html
-   :tags: Basics
-
-
-.. customcarditem::
    :header: Defining a Neural Network
    :card_description: Learn how to use PyTorch's torch.nn package to create and define a neural network for the MNIST dataset.
    :image: ../_static/img/thumbnails/cropped/defining-a-network.PNG
@@ -116,6 +108,69 @@ Recipes are bite-sized, actionable examples of how to use specific PyTorch featu
    :link: ../recipes/recipes/profiler_recipe.html
    :tags: Basics
 
+.. customcarditem::
+   :header: PyTorch Profiler with Instrumentation and Tracing Technology API (ITT API) support
+   :card_description: Learn how to use PyTorch's profiler with Instrumentation and Tracing Technology API (ITT API) to visualize operators labeling in Intel® VTune™ Profiler GUI
+   :image: ../_static/img/thumbnails/cropped/profiler.png
+   :link: ../recipes/profile_with_itt.html
+   :tags: Basics
+
+.. customcarditem::
+   :header: Torch Compile IPEX Backend
+   :card_description: Learn how to use torch.compile IPEX backend
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/torch_compile_backend_ipex.html
+   :tags: Basics
+
+.. customcarditem::
+   :header: Dynamic Compilation Control with ``torch.compiler.set_stance``
+   :card_description: Learn how to use torch.compiler.set_stance
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/torch_compiler_set_stance_tutorial.html
+   :tags: Compiler
+
+.. customcarditem::
+   :header: Reasoning about Shapes in PyTorch
+   :card_description: Learn how to use the meta device to reason about shapes in your model.
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/recipes/reasoning_about_shapes.html
+   :tags: Basics
+
+.. customcarditem::
+   :header: Tips for Loading an nn.Module from a Checkpoint
+   :card_description: Learn tips for loading an nn.Module from a checkpoint.
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/recipes/module_load_state_dict_tips.html
+   :tags: Basics
+
+.. customcarditem::
+   :header: (beta) Using TORCH_LOGS to observe torch.compile
+   :card_description: Learn how to use the torch logging APIs to observe the compilation process.
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/torch_logs.html
+   :tags: Basics
+
+.. customcarditem::
+   :header: Extension points in nn.Module for loading state_dict and tensor subclasses
+   :card_description: New extension points in nn.Module.
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/recipes/swap_tensors.html
+   :tags: Basics
+
+.. customcarditem::
+   :header: torch.export AOTInductor Tutorial for Python runtime
+   :card_description: Learn an end-to-end example of how to use AOTInductor for python runtime.
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/torch_export_aoti_python.html
+   :tags: Basics
+
+.. customcarditem::
+   :header: Demonstration of torch.export flow, common challenges and the solutions to address them
+   :card_description: Learn how to export models for popular usecases
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/torch_export_challenges_solutions.html
+   :tags: Compiler,TorchCompile
+
 .. Interpretability
 
 .. customcarditem::
@@ -132,16 +187,6 @@ Recipes are bite-sized, actionable examples of how to use specific PyTorch featu
    :link: ../recipes/recipes/tensorboard_with_pytorch.html
    :tags: Visualization,TensorBoard
 
-.. Quantization
-
-.. customcarditem::
-   :header: Dynamic Quantization
-   :card_description:  Apply dynamic quantization to a simple LSTM model.
-   :image: ../_static/img/thumbnails/cropped/using-dynamic-post-training-quantization.png
-   :link: ../recipes/recipes/dynamic_quantization.html
-   :tags: Quantization,Text,Model-Optimization
-
-
 .. Production Development
 
 .. customcarditem::
@@ -150,13 +195,6 @@ Recipes are bite-sized, actionable examples of how to use specific PyTorch featu
    :image: ../_static/img/thumbnails/cropped/torchscript_overview.png
    :link: ../recipes/torchscript_inference.html
    :tags: TorchScript
-
-.. customcarditem::
-   :header: Deploying with Flask
-   :card_description: Learn how to use Flask, a lightweight web server, to quickly setup a web API from your trained PyTorch model.
-   :image: ../_static/img/thumbnails/cropped/using-flask-create-restful-api.png
-   :link: ../recipes/deployment_with_flask.html
-   :tags: Production,TorchScript
 
 .. customcarditem::
    :header: PyTorch Mobile Performance Recipes
@@ -171,20 +209,6 @@ Recipes are bite-sized, actionable examples of how to use specific PyTorch featu
    :image: ../_static/img/thumbnails/cropped/android.png
    :link: ../recipes/android_native_app_with_custom_op.html
    :tags: Mobile
-
-.. customcarditem::
-  :header: Fuse Modules recipe
-  :card_description: Learn how to fuse a list of PyTorch modules into a single module to reduce the model size before quantization.
-  :image: ../_static/img/thumbnails/cropped/mobile.png
-  :link: ../recipes/fuse.html
-  :tags: Mobile
-
-.. customcarditem::
-  :header: Quantization for Mobile Recipe
-  :card_description: Learn how to reduce the model size and make it run faster without losing much on accuracy.
-  :image: ../_static/img/thumbnails/cropped/mobile.png
-  :link: ../recipes/quantization.html
-  :tags: Mobile,Quantization
 
 .. customcarditem::
   :header: Script and Optimize for Mobile
@@ -206,6 +230,13 @@ Recipes are bite-sized, actionable examples of how to use specific PyTorch featu
   :image: ../_static/img/thumbnails/cropped/android.png
   :link: ../recipes/model_preparation_android.html
   :tags: Mobile
+
+.. customcarditem::
+   :header: Mobile Interpreter Workflow in Android and iOS
+   :card_description: Learn how to use the mobile interpreter on iOS and Andriod devices.
+   :image: ../_static/img/thumbnails/cropped/mobile.png
+   :link: ../recipes/mobile_interpreter.html
+   :tags: Mobile
 
 .. customcarditem::
    :header: Profiling PyTorch RPC-Based Workloads
@@ -232,7 +263,126 @@ Recipes are bite-sized, actionable examples of how to use specific PyTorch featu
    :link: ../recipes/recipes/tuning_guide.html
    :tags: Model-Optimization
 
+.. customcarditem::
+   :header: Optimizing CPU Performance on Intel® Xeon® with run_cpu Script
+   :card_description: How to use run_cpu script for optimal runtime configurations on Intel® Xeon CPUs.
+   :image: ../_static/img/thumbnails/cropped/profiler.png
+   :link: ../recipes/xeon_run_cpu.html
+   :tags: Model-Optimization
+
+.. customcarditem::
+   :header: PyTorch Inference Performance Tuning on AWS Graviton Processors
+   :card_description: Tips for achieving the best inference performance on AWS Graviton CPUs
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/inference_tuning_on_aws_graviton.html
+   :tags: Model-Optimization
+
+.. Leverage Advanced Matrix Extensions
+
+.. customcarditem::
+   :header: Leverage Intel® Advanced Matrix Extensions
+   :card_description: Learn to leverage Intel® Advanced Matrix Extensions.
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/amx.html
+   :tags: Model-Optimization
+
+.. (beta) Utilizing Torch Function modes with torch.compile
+
+.. customcarditem::
+   :header: (beta) Utilizing Torch Function modes with torch.compile
+   :card_description: Override torch operators with Torch Function modes and torch.compile
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/torch_compile_torch_function_modes.html
+   :tags: Model-Optimization
+
+.. (beta) Compiling the Optimizer with torch.compile
+
+.. customcarditem::
+   :header: (beta) Compiling the Optimizer with torch.compile
+   :card_description: Speed up the optimizer using torch.compile
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/compiling_optimizer.html
+   :tags: Model-Optimization
+
+.. (beta) Running the compiled optimizer with an LR Scheduler
+
+.. customcarditem::
+   :header: (beta) Running the compiled optimizer with an LR Scheduler
+   :card_description: Speed up training with LRScheduler and torch.compiled optimizer
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/compiling_optimizer_lr_scheduler.html
+   :tags: Model-Optimization
+
+.. (beta) Explicit horizontal fusion with foreach_map and torch.compile
+.. customcarditem::
+   :header: (beta) Explicit horizontal fusion with foreach_map and torch.compile
+   :card_description: Horizontally fuse pointwise ops with torch.compile
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/foreach_map.py
+   :tags: Model-Optimization
+
+.. Using User-Defined Triton Kernels with ``torch.compile``
+
+.. customcarditem::
+   :header: Using User-Defined Triton Kernels with ``torch.compile``
+   :card_description: Learn how to use user-defined kernels with ``torch.compile``
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/torch_compile_user_defined_triton_kernel_tutorial.html
+   :tags: Model-Optimization
+
+.. Compile Time Caching in ``torch.compile``
+
+.. customcarditem::
+   :header: Compile Time Caching in ``torch.compile``
+   :card_description: Learn how to use compile time caching in ``torch.compile``
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/torch_compile_caching_tutorial.html
+   :tags: Model-Optimization
+
+.. Compile Time Caching Configurations
+
+.. customcarditem::
+   :header: Compile Time Caching Configurations
+   :card_description: Learn how to configure compile time caching in ``torch.compile``
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/torch_compile_caching_configuration_tutorial.html
+   :tags: Model-Optimization
+
+.. Reducing Cold Start Compilation Time with Regional Compilation
+
+.. customcarditem::
+   :header: Reducing torch.compile cold start compilation time with regional compilation
+   :card_description: Learn how to use regional compilation to control cold start compile time
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/regional_compilation.html
+   :tags: Model-Optimization
+
+.. Intel(R) Extension for PyTorch*
+
+.. customcarditem::
+   :header: Intel® Extension for PyTorch*
+   :card_description: Introduction of Intel® Extension for PyTorch*
+   :image: ../_static/img/thumbnails/cropped/profiler.png
+   :link: ../recipes/intel_extension_for_pytorch.html
+   :tags: Model-Optimization
+
+.. Intel(R) Neural Compressor for PyTorch*
+
+.. customcarditem::
+   :header: Intel® Neural Compressor for PyTorch
+   :card_description: Ease-of-use quantization for PyTorch with Intel® Neural Compressor.
+   :image: ../_static/img/thumbnails/cropped/profiler.png
+   :link: ../recipes/intel_neural_compressor_for_pytorch.html
+   :tags: Quantization,Model-Optimization
+
 .. Distributed Training
+
+.. customcarditem::
+   :header: Getting Started with DeviceMesh
+   :card_description: Learn how to use DeviceMesh
+   :image: ../_static/img/thumbnails/cropped/profiler.png
+   :link: ../recipes/distributed_device_mesh.html
+   :tags: Distributed-Training
 
 .. customcarditem::
    :header: Shard Optimizer States with ZeroRedundancyOptimizer
@@ -246,6 +396,34 @@ Recipes are bite-sized, actionable examples of how to use specific PyTorch featu
    :card_description: How to use RPC with direct GPU-to-GPU communication.
    :image: ../_static/img/thumbnails/cropped/profiler.png
    :link: ../recipes/cuda_rpc.html
+   :tags: Distributed-Training
+
+.. customcarditem::
+   :header: Distributed Optimizer with TorchScript support
+   :card_description: How to enable TorchScript support for Distributed Optimizer.
+   :image: ../_static/img/thumbnails/cropped/profiler.png
+   :link: ../recipes/distributed_optim_torchscript.html
+   :tags: Distributed-Training,TorchScript
+
+.. customcarditem::
+   :header: Getting Started with Distributed Checkpoint (DCP)
+   :card_description: Learn how to checkpoint distributed models with Distributed Checkpoint package.
+   :image: ../_static/img/thumbnails/cropped/Getting-Started-with-DCP.png
+   :link: ../recipes/distributed_checkpoint_recipe.html
+   :tags: Distributed-Training
+
+.. customcarditem::
+   :header: Asynchronous Checkpointing (DCP)
+   :card_description: Learn how to checkpoint distributed models with Distributed Checkpoint package.
+   :image: ../_static/img/thumbnails/cropped/Getting-Started-with-DCP.png
+   :link: ../recipes/distributed_async_checkpoint_recipe.html
+   :tags: Distributed-Training
+
+.. customcarditem::
+   :header: Getting Started with CommDebugMode
+   :card_description: Learn how to use CommDebugMode for DTensors
+   :image: ../_static/img/thumbnails/cropped/generic-pytorch-logo.png
+   :link: ../recipes/distributed_comm_debug_mode.html
    :tags: Distributed-Training
 
 .. End of tutorial card section
@@ -266,8 +444,8 @@ Recipes are bite-sized, actionable examples of how to use specific PyTorch featu
 .. toctree::
    :hidden:
 
-   /recipes/recipes/loading_data_recipe
    /recipes/recipes/defining_a_neural_network
+   /recipes/torch_logs
    /recipes/recipes/what_is_state_dict
    /recipes/recipes/saving_and_loading_models_for_inference
    /recipes/recipes/saving_and_loading_a_general_checkpoint
@@ -276,13 +454,21 @@ Recipes are bite-sized, actionable examples of how to use specific PyTorch featu
    /recipes/recipes/save_load_across_devices
    /recipes/recipes/zeroing_out_gradients
    /recipes/recipes/profiler_recipe
+   /recipes/recipes/profile_with_itt
    /recipes/recipes/Captum_Recipe
    /recipes/recipes/tensorboard_with_pytorch
    /recipes/recipes/dynamic_quantization
    /recipes/recipes/amp_recipe
    /recipes/recipes/tuning_guide
+   /recipes/recipes/xeon_run_cpu
+   /recipes/recipes/intel_extension_for_pytorch
+   /recipes/compiling_optimizer
+   /recipes/torch_compile_backend_ipex
    /recipes/torchscript_inference
-   /recipes/deployment_with_flask
    /recipes/distributed_rpc_profiling
    /recipes/zero_redundancy_optimizer
    /recipes/cuda_rpc
+   /recipes/distributed_optim_torchscript
+   /recipes/mobile_interpreter
+   /recipes/distributed_comm_debug_mode
+   /recipes/torch_export_challenges_solutions

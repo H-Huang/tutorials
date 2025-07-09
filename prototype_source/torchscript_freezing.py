@@ -2,6 +2,8 @@
 Model Freezing in TorchScript
 =============================
 
+.. warning:: TorchScript is no longer in active development.
+
 In this tutorial, we introduce the syntax for *model freezing* in TorchScript.
 Freezing is the process of inlining Pytorch module parameters and attributes
 values into the TorchScript internal representation. Parameter and attribute
@@ -12,7 +14,7 @@ Basic Syntax
 ------------
 Model freezing can be invoked using API below:
 
- ``torch.jit.freeze(mod : ScriptModule, names : str[]) -> SciptModule``
+ ``torch.jit.freeze(mod : ScriptModule, names : str[]) -> ScriptModule``
 
 Note the input module can either be the result of scripting or tracing.
 See https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html

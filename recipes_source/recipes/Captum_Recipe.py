@@ -14,9 +14,10 @@ Model Interpretability using Captum
 # attribution algorithms such as \ ``Guided GradCam``\  and
 # \ ``Integrated Gradients``\  in a unified way.
 # 
-# In this recipe you will learn how to use Captum to: \* attribute the
-# predictions of an image classifier to their corresponding image
-# features. \* visualize the attribution results.
+# In this recipe you will learn how to use Captum to: 
+#
+# - Attribute the predictions of an image classifier to their corresponding image features. 
+# - Visualize the attribution results.
 # 
 
 
@@ -41,12 +42,12 @@ Model Interpretability using Captum
 # 
 
 import torchvision
-from torchvision import transforms
+from torchvision import models, transforms
 from PIL import Image
 import requests
 from io import BytesIO
 
-model = torchvision.models.resnet18(pretrained=True).eval()
+model = torchvision.models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1).eval()
 
 response = requests.get("https://image.freepik.com/free-photo/two-beautiful-puppies-cat-dog_58409-6024.jpg")
 img = Image.open(BytesIO(response.content))
@@ -58,7 +59,7 @@ center_crop = transforms.Compose([
 
 normalize = transforms.Compose([
     transforms.ToTensor(),               # converts the image to a tensor with values between 0 and 1
-    transforms.Normalize(                # normalize to follow 0-centered imagenet pixel rgb distribution
+    transforms.Normalize(                # normalize to follow 0-centered imagenet pixel RGB distribution
      mean=[0.485, 0.456, 0.406],
      std=[0.229, 0.224, 0.225]
     )
@@ -141,7 +142,7 @@ vis_signs = ["all", "all"] # "positive", "negative", or "all" to show both
 # negative attribution indicates distractor areas whose absence increases the score
 
 _ = viz.visualize_image_attr_multiple(attribution_dog,
-                                      center_crop(img),
+                                      np.array(center_crop(img)),
                                       vis_types,
                                       vis_signs,
                                       ["attribution for dog", "image"],
@@ -152,7 +153,7 @@ _ = viz.visualize_image_attr_multiple(attribution_dog,
 attribution_cat = np.transpose(attribution_cat.squeeze().cpu().detach().numpy(), (1,2,0))
 
 _ = viz.visualize_image_attr_multiple(attribution_cat,
-                                      center_crop(img),
+                                      np.array(center_crop(img)),
                                       ["heat_map", "original_image"],  
                                       ["all", "all"], # positive/negative attribution or all
                                       ["attribution for cat", "image"],

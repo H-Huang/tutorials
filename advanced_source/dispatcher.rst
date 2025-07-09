@@ -1,6 +1,11 @@
 Registering a Dispatched Operator in C++
 ========================================
 
+.. warning::
+
+    This tutorial is deprecated as of PyTorch 2.4. Please see :ref:`custom-ops-landing-page`
+    for the newest up-to-date guides on extending PyTorch with Custom Operators.
+
 The dispatcher is an internal component of PyTorch which is responsible for
 figuring out what code should actually get run when you call a function like
 ``torch::add``.  This can be nontrivial, because PyTorch operations need
@@ -104,6 +109,57 @@ speaking, the structure of your registrations will look like this:
     implemented: the ``torch_xla`` library contains a ``TORCH_LIBRARY_IMPL``
     that provides implementations for all basic operators on the XLA dispatch
     key.
+
+
+For operators that do not need autograd
+---------------------------------------
+
+Note: This section only applies to versions of PyTorch ``>= 1.10``.
+
+In the next section, we will discuss how to add autograd support to an operator.
+But for the ops that do not need autograd support, the following kernel should be
+registered improve useability and make your op behave like PyTorch's built-in
+operators.
+
+.. code-block:: cpp
+
+  TORCH_LIBRARY_IMPL(myops, Autograd, m) {
+    m.impl(op, autogradNotImplementedFallback());
+  }
+
+The above lines registers an ``Autograd`` kernel that appends a dummy
+``NotImplemented`` node on forward (preserving the ``require_grad``-ness of the inputs).
+On backward, the ``NotImplemented`` node raises an error. This can be helpful
+for debugging in larger models where previously it can be hard to pin-point
+exactly where the ``requires_grad``-ness is lost during the forward pass.
+
+In-place or view ops
+^^^^^^^^^^^^^^^^^^^^
+
+To ensure correctness and best possible performance, if your op mutates an input
+in-place or returns a tensor that aliases with one of the inputs, two additional
+steps should be taken:
+
+1. Register an ``ADInplaceOrView`` kernel in addition to the ``Autograd`` kernel
+   above. This kernel handles the necessary bookkeeping to ensure the correctness
+   of in-place or view operations. It is important to note that this ADInplaceOrView
+   kernel should only be used with ``autogradNotImplementedFallback``.
+
+.. code-block:: cpp
+
+  TORCH_LIBRARY_IMPL(myops, Autograd, m) {
+    m.impl(op, autogradNotImplementedFallback());
+  }
+  TORCH_LIBRARY_IMPL(myops, ADInplaceOrView, m) {
+    m.impl(op, autogradNotImplementedInplaceOrViewFallback());
+  }
+
+2. The ``Autograd`` or ``ADInplaceOrView`` boxed kernels registered above
+   rely on operator schema information in their logi. If your op mutates an input
+   in-place or returns a tensor that aliases with one of the inputs it is important to
+   ensure that your schema properly reflects this. See
+   `here <https://github.com/pytorch/pytorch/blob/master/aten/src/ATen/native/README.md>`_
+   for more information on how to annotate the schema.
 
 .. _autograd-support:
 

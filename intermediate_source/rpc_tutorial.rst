@@ -2,6 +2,8 @@ Getting Started with Distributed RPC Framework
 =================================================
 **Author**: `Shen Li <https://mrshenli.github.io/>`_
 
+.. note::
+   |edit| View and edit this tutorial in `github <https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_tutorial.rst>`__.
 
 Prerequisites:
 
@@ -9,8 +11,8 @@ Prerequisites:
 -  `RPC API documents <https://pytorch.org/docs/master/rpc.html>`__
 
 This tutorial uses two simple examples to demonstrate how to build distributed
-training with the `torch.distributed.rpc <https://pytorch.org/docs/master/rpc.html>`__
-package which is first introduced as a prototype feature in PyTorch v1.4.
+training with the `torch.distributed.rpc <https://pytorch.org/docs/stable/rpc.html>`__
+package which was first introduced as an experimental feature in PyTorch v1.4.
 Source code of the two examples can be found in
 `PyTorch examples <https://github.com/pytorch/examples>`__.
 
@@ -36,19 +38,19 @@ paradigms. For example:
    machines.
 
 
-The `torch.distributed.rpc <https://pytorch.org/docs/master/rpc.html>`__ package
-can help with the above scenarios. In case 1, `RPC <https://pytorch.org/docs/master/rpc.html#rpc>`__
-and `RRef <https://pytorch.org/docs/master/rpc.html#rref>`__ allow sending data
+The `torch.distributed.rpc <https://pytorch.org/docs/stable/rpc.html>`__ package
+can help with the above scenarios. In case 1, `RPC <https://pytorch.org/docs/stable/rpc.html#rpc>`__
+and `RRef <https://pytorch.org/docs/stable/rpc.html#rref>`__ allow sending data
 from one worker to another while easily referencing remote data objects. In
-case 2, `distributed autograd <https://pytorch.org/docs/master/rpc.html#distributed-autograd-framework>`__
-and `distributed optimizer <https://pytorch.org/docs/master/rpc.html#module-torch.distributed.optim>`__
+case 2, `distributed autograd <https://pytorch.org/docs/stable/rpc.html#distributed-autograd-framework>`__
+and `distributed optimizer <https://pytorch.org/docs/stable/rpc.html#module-torch.distributed.optim>`__
 make executing backward pass and optimizer step as if it is local training. In
 the next two sections, we will demonstrate APIs of
-`torch.distributed.rpc <https://pytorch.org/docs/master/rpc.html>`__ using a
+`torch.distributed.rpc <https://pytorch.org/docs/stable/rpc.html>`__ using a
 reinforcement learning example and a language model example. Please note, this
 tutorial does not aim at building the most accurate or efficient models to
 solve given problems, instead, the main goal here is to show how to use the
-`torch.distributed.rpc <https://pytorch.org/docs/master/rpc.html>`__ package to
+`torch.distributed.rpc <https://pytorch.org/docs/stable/rpc.html>`__ package to
 build distributed training applications.
 
 
@@ -57,7 +59,7 @@ Distributed Reinforcement Learning using RPC and RRef
 -----------------------------------------------------
 
 This section describes steps to build a toy distributed reinforcement learning
-model using RPC to solve CartPole-v1 from `OpenAI Gym <https://gym.openai.com>`__.
+model using RPC to solve CartPole-v1 from `OpenAI Gym <https://www.gymlibrary.dev/environments/classic_control/cart_pole/>`__.
 The policy code is mostly borrowed from the existing single-thread
 `example <https://github.com/pytorch/examples/blob/master/reinforcement_learning>`__
 as shown below. We will skip details of the ``Policy`` design, and focus on RPC
@@ -154,7 +156,7 @@ send commands. Applications don't need to worry about the lifetime of ``RRefs``.
 The owner of each ``RRef`` maintains a reference counting map to track its
 lifetime, and guarantees the remote data object will not be deleted as long as
 there is any live user of that ``RRef``. Please refer to the ``RRef``
-`design doc <https://pytorch.org/docs/master/notes/rref.html>`__ for details.
+`design doc <https://pytorch.org/docs/stable/rpc/rref.html>`__ for details.
 
 
 .. code:: python
@@ -289,10 +291,10 @@ observers. The agent serves as master by repeatedly calling ``run_episode`` and
 ``finish_episode`` until the running reward surpasses the reward threshold
 specified by the environment. All observers passively waiting for commands
 from the agent. The code is wrapped by
-`rpc.init_rpc <https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.init_rpc>`__ and
-`rpc.shutdown <https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.shutdown>`__,
+`rpc.init_rpc <https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.init_rpc>`__ and
+`rpc.shutdown <https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.shutdown>`__,
 which initializes and terminates RPC instances respectively. More details are
-available in the `API page <https://pytorch.org/docs/master/rpc.html>`__.
+available in the `API page <https://pytorch.org/docs/stable/rpc.html>`__.
 
 
 .. code:: python
@@ -442,7 +444,7 @@ takes a GPU tensor, you need to move it to the proper device explicitly.
 With the above sub-modules, we can now piece them together using RPC to
 create an RNN model. In the code below ``ps`` represents a parameter server,
 which hosts parameters of the embedding table and the decoder. The constructor
-uses the `remote <https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.remote>`__
+uses the `remote <https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.remote>`__
 API to create an ``EmbeddingTable`` object and a ``Decoder`` object on the
 parameter server, and locally creates the ``LSTM`` sub-module. During the
 forward pass, the trainer uses the ``EmbeddingTable`` ``RRef`` to find the
@@ -529,7 +531,7 @@ the given arguments (i.e., ``lr=0.05``).
 In the training loop, it first creates a distributed autograd context, which
 will help the distributed autograd engine to find gradients and involved RPC
 send/recv functions. The design details of the distributed autograd engine can
-be found in its `design note <https://pytorch.org/docs/master/notes/distributed_autograd.html>`__.
+be found in its `design note <https://pytorch.org/docs/stable/rpc/distributed_autograd.html>`__.
 Then, it kicks off the forward pass as if it is a local
 model, and run the distributed backward pass. For the distributed backward, you
 only need to specify a list of roots, in this case, it is the loss ``Tensor``.

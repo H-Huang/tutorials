@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 PyTorch: Tensors and autograd
 -------------------------------
 
 A third order polynomial, trained to predict :math:`y=\sin(x)` from :math:`-\pi`
-to :math:`pi` by minimizing squared Euclidean distance.
+to :math:`\pi` by minimizing squared Euclidean distance.
 
 This implementation computes the forward pass using operations on PyTorch
 Tensors, and uses PyTorch autograd to compute gradients.
@@ -17,24 +16,28 @@ holding the gradient of ``x`` with respect to some scalar value.
 import torch
 import math
 
+# We want to be able to train our model on an `accelerator <https://pytorch.org/docs/stable/torch.html#accelerators>`__
+# such as CUDA, MPS, MTIA, or XPU. If the current accelerator is available, we will use it. Otherwise, we use the CPU.
+
 dtype = torch.float
-device = torch.device("cpu")
-# device = torch.device("cuda:0")  # Uncomment this to run on GPU
+device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+print(f"Using {device} device")
+torch.set_default_device(device)
 
 # Create Tensors to hold input and outputs.
 # By default, requires_grad=False, which indicates that we do not need to
 # compute gradients with respect to these Tensors during the backward pass.
-x = torch.linspace(-math.pi, math.pi, 2000, device=device, dtype=dtype)
+x = torch.linspace(-math.pi, math.pi, 2000, dtype=dtype)
 y = torch.sin(x)
 
 # Create random Tensors for weights. For a third order polynomial, we need
 # 4 weights: y = a + b x + c x^2 + d x^3
 # Setting requires_grad=True indicates that we want to compute gradients with
 # respect to these Tensors during the backward pass.
-a = torch.randn((), device=device, dtype=dtype, requires_grad=True)
-b = torch.randn((), device=device, dtype=dtype, requires_grad=True)
-c = torch.randn((), device=device, dtype=dtype, requires_grad=True)
-d = torch.randn((), device=device, dtype=dtype, requires_grad=True)
+a = torch.randn((), dtype=dtype, requires_grad=True)
+b = torch.randn((), dtype=dtype, requires_grad=True)
+c = torch.randn((), dtype=dtype, requires_grad=True)
+d = torch.randn((), dtype=dtype, requires_grad=True)
 
 learning_rate = 1e-6
 for t in range(2000):

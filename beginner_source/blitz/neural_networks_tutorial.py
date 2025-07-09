@@ -46,32 +46,42 @@ class Net(nn.Module):
 
     def __init__(self):
         super(Net, self).__init__()
-        # 1 input image channel, 6 output channels, 3x3 square convolution
+        # 1 input image channel, 6 output channels, 5x5 square convolution
         # kernel
-        self.conv1 = nn.Conv2d(1, 6, 3)
-        self.conv2 = nn.Conv2d(6, 16, 3)
+        self.conv1 = nn.Conv2d(1, 6, 5)
+        self.conv2 = nn.Conv2d(6, 16, 5)
         # an affine operation: y = Wx + b
-        self.fc1 = nn.Linear(16 * 6 * 6, 120)  # 6*6 from image dimension 
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)  # 5*5 from image dimension 
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 10)
 
-    def forward(self, x):
-        # Max pooling over a (2, 2) window
-        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-        # If the size is a square, you can specify with a single number
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        x = x.view(-1, self.num_flat_features(x))
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
-    def num_flat_features(self, x):
-        size = x.size()[1:]  # all dimensions except the batch dimension
-        num_features = 1
-        for s in size:
-            num_features *= s
-        return num_features
+    def forward(self, input):
+        # Convolution layer C1: 1 input image channel, 6 output channels,
+        # 5x5 square convolution, it uses RELU activation function, and
+        # outputs a Tensor with size (N, 6, 28, 28), where N is the size of the batch
+        c1 = F.relu(self.conv1(input))
+        # Subsampling layer S2: 2x2 grid, purely functional,
+        # this layer does not have any parameter, and outputs a (N, 6, 14, 14) Tensor
+        s2 = F.max_pool2d(c1, (2, 2))
+        # Convolution layer C3: 6 input channels, 16 output channels,
+        # 5x5 square convolution, it uses RELU activation function, and
+        # outputs a (N, 16, 10, 10) Tensor
+        c3 = F.relu(self.conv2(s2))
+        # Subsampling layer S4: 2x2 grid, purely functional,
+        # this layer does not have any parameter, and outputs a (N, 16, 5, 5) Tensor
+        s4 = F.max_pool2d(c3, 2)
+        # Flatten operation: purely functional, outputs a (N, 400) Tensor
+        s4 = torch.flatten(s4, 1)
+        # Fully connected layer F5: (N, 400) Tensor input,
+        # and outputs a (N, 120) Tensor, it uses RELU activation function
+        f5 = F.relu(self.fc1(s4))
+        # Fully connected layer F6: (N, 120) Tensor input,
+        # and outputs a (N, 84) Tensor, it uses RELU activation function
+        f6 = F.relu(self.fc2(f5))
+        # Gaussian layer OUTPUT: (N, 84) Tensor input, and
+        # outputs a (N, 10) Tensor
+        output = self.fc3(f6)
+        return output
 
 
 net = Net()
@@ -151,7 +161,7 @@ out.backward(torch.randn(1, 10))
 # `loss functions <https://pytorch.org/docs/nn.html#loss-functions>`_ under the
 # nn package .
 # A simple loss is: ``nn.MSELoss`` which computes the mean-squared error
-# between the input and the target.
+# between the output and the target.
 #
 # For example:
 
@@ -168,16 +178,17 @@ print(loss)
 # ``.grad_fn`` attribute, you will see a graph of computations that looks
 # like this:
 #
-# ::
+# .. code-block:: sh
 #
 #     input -> conv2d -> relu -> maxpool2d -> conv2d -> relu -> maxpool2d
-#           -> view -> linear -> relu -> linear -> relu -> linear
+#           -> flatten -> linear -> relu -> linear -> relu -> linear
 #           -> MSELoss
 #           -> loss
 #
 # So, when we call ``loss.backward()``, the whole graph is differentiated
-# w.r.t. the loss, and all Tensors in the graph that have ``requires_grad=True``
-# will have their ``.grad`` Tensor accumulated with the gradient.
+# w.r.t. the neural net parameters, and all Tensors in the graph that have
+# ``requires_grad=True`` will have their ``.grad`` Tensor accumulated with the
+# gradient.
 #
 # For illustration, let us follow a few steps backward:
 
@@ -225,7 +236,9 @@ print(net.conv1.bias.grad)
 # The simplest update rule used in practice is the Stochastic Gradient
 # Descent (SGD):
 #
-#      ``weight = weight - learning_rate * gradient``
+# .. code:: python
+#
+#     weight = weight - learning_rate * gradient
 #
 # We can implement this using simple Python code:
 #
@@ -239,22 +252,25 @@ print(net.conv1.bias.grad)
 # update rules such as SGD, Nesterov-SGD, Adam, RMSProp, etc.
 # To enable this, we built a small package: ``torch.optim`` that
 # implements all these methods. Using it is very simple:
-
-import torch.optim as optim
-
-# create your optimizer
-optimizer = optim.SGD(net.parameters(), lr=0.01)
-
-# in your training loop:
-optimizer.zero_grad()   # zero the gradient buffers
-output = net(input)
-loss = criterion(output, target)
-loss.backward()
-optimizer.step()    # Does the update
+#
+# .. code:: python
+#
+#     import torch.optim as optim
+#
+#     # create your optimizer
+#     optimizer = optim.SGD(net.parameters(), lr=0.01)
+#
+#     # in your training loop:
+#     optimizer.zero_grad()   # zero the gradient buffers
+#     output = net(input)
+#     loss = criterion(output, target)
+#     loss.backward()
+#     optimizer.step()    # Does the update
+#
 
 
 ###############################################################
-# .. Note::
+# .. note::
 #
 #       Observe how gradient buffers had to be manually set to zero using
 #       ``optimizer.zero_grad()``. This is because gradients are accumulated

@@ -91,8 +91,9 @@ class GalleryItemDirective(Directive):
                 _, blocks = sphinx_gallery.gen_rst.split_code_and_text_blocks(abs_fname)
                 intro, _ = sphinx_gallery.gen_rst.extract_intro_and_title(abs_fname, blocks[0][1])
 
-            thumbnail_rst = sphinx_gallery.backreferences._thumbnail_div(
-                dirname, basename, intro)
+            thumbnail_rst = ''
+            #sphinx_gallery.backreferences._thumbnail_div(
+            #    dirname, basename, intro)
 
             if 'figure' in self.options:
                 rel_figname, figname = env.relfn2path(self.options['figure'])
@@ -266,7 +267,9 @@ CARD_TEMPLATE = """
 
     <div class="col-md-12 tutorials-card-container" data-tags={tags}>
 
-    <div class="card tutorials-card" link={link}>
+    <div class="card tutorials-card">
+
+    <a href="{link}">
 
     <div class="card-body">
 
@@ -281,6 +284,8 @@ CARD_TEMPLATE = """
     <div class="tutorials-image">{image}</div>
 
     </div>
+
+    </a>
 
     </div>
 

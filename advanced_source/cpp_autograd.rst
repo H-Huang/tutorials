@@ -5,7 +5,7 @@ The ``autograd`` package is crucial for building highly flexible and dynamic neu
 networks in PyTorch. Most of the autograd APIs in PyTorch Python frontend are also available
 in C++ frontend, allowing easy translation of autograd code from Python to C++.
 
-In this tutorial we'll look at several examples of doing autograd in PyTorch C++ frontend.
+In this tutorial explore several examples of doing autograd in PyTorch C++ frontend.
 Note that this tutorial assumes that you already have a basic understanding of
 autograd in Python frontend. If that's not the case, please first read
 `Autograd: Automatic Differentiation <https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html>`_.
@@ -255,9 +255,9 @@ Out:
   [ CPUFloatType{3,4} ]
 
 Please see the documentation for ``torch::autograd::backward``
-(`link <https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1afa9b5d4329085df4b6b3d4b4be48914b.html>`_)
+(`link <https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1a1403bf65b1f4f8c8506a9e6e5312d030.html>`_)
 and ``torch::autograd::grad``
-(`link <https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1a1e03c42b14b40c306f9eb947ef842d9c.html>`_)
+(`link <https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1ab9fa15dc09a8891c26525fb61d33401a.html>`_)
 for more information on how to use them.
 
 Using custom autograd function in C++
@@ -394,9 +394,9 @@ C++ using the following table:
 +--------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Python                         | C++                                                                                                                                                                    |
 +================================+========================================================================================================================================================================+
-| ``torch.autograd.backward``    | ``torch::autograd::backward`` (`link <https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1afa9b5d4329085df4b6b3d4b4be48914b.html>`_)                  |
+| ``torch.autograd.backward``    | ``torch::autograd::backward`` (`link <https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1a1403bf65b1f4f8c8506a9e6e5312d030.html>`_)                  |
 +--------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| ``torch.autograd.grad``        | ``torch::autograd::grad`` (`link <https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1a1e03c42b14b40c306f9eb947ef842d9c.html>`_)                      |
+| ``torch.autograd.grad``        | ``torch::autograd::grad`` (`link <https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1ab9fa15dc09a8891c26525fb61d33401a.html>`_)                      |
 +--------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | ``torch.Tensor.detach``        | ``torch::Tensor::detach`` (`link <https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor6detachEv>`_)                                              |
 +--------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------+

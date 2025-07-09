@@ -57,7 +57,7 @@ the right tool for the job. Examples for such environments include:
   Multiprocessing is an alternative, but not as scalable and has significant
   shortcomings. C++ has no such constraints and threads are easy to use and
   create. Models requiring heavy parallelization, like those used in `Deep
-  Neuroevolution <https://eng.uber.com/deep-neuroevolution/>`_, can benefit from
+  Neuroevolution <https://www.uber.com/blog/deep-neuroevolution/>`_, can benefit from
   this.
 - **Existing C++ Codebases**: You may be the owner of an existing C++
   application doing anything from serving web pages in a backend server to
@@ -662,7 +662,7 @@ Defining the DCGAN Modules
 We now have the necessary background and introduction to define the modules for
 the machine learning task we want to solve in this post. To recap: our task is
 to generate images of digits from the `MNIST dataset
-<http://yann.lecun.com/exdb/mnist/>`_. We want to use a `generative adversarial
+<https://huggingface.co/datasets/ylecun/mnist>`_. We want to use a `generative adversarial
 network (GAN)
 <https://papers.nips.cc/paper/5423-generative-adversarial-nets.pdf>`_ to solve
 this task. In particular, we'll use a `DCGAN architecture
@@ -946,9 +946,9 @@ we use implement the `Adam <https://arxiv.org/pdf/1412.6980.pdf>`_ algorithm:
 .. code-block:: cpp
 
   torch::optim::Adam generator_optimizer(
-      generator->parameters(), torch::optim::AdamOptions(2e-4).beta1(0.5));
+      generator->parameters(), torch::optim::AdamOptions(2e-4).betas(std::make_tuple(0.5, 0.5)));
   torch::optim::Adam discriminator_optimizer(
-      discriminator->parameters(), torch::optim::AdamOptions(5e-4).beta1(0.5));
+      discriminator->parameters(), torch::optim::AdamOptions(5e-4).betas(std::make_tuple(0.5, 0.5)));
 
 .. note::
 
@@ -969,7 +969,7 @@ the data loader every epoch and then write the GAN training code:
       discriminator->zero_grad();
       torch::Tensor real_images = batch.data;
       torch::Tensor real_labels = torch::empty(batch.data.size(0)).uniform_(0.8, 1.0);
-      torch::Tensor real_output = discriminator->forward(real_images);
+      torch::Tensor real_output = discriminator->forward(real_images).reshape(real_labels.sizes());
       torch::Tensor d_loss_real = torch::binary_cross_entropy(real_output, real_labels);
       d_loss_real.backward();
 
@@ -977,7 +977,7 @@ the data loader every epoch and then write the GAN training code:
       torch::Tensor noise = torch::randn({batch.data.size(0), kNoiseSize, 1, 1});
       torch::Tensor fake_images = generator->forward(noise);
       torch::Tensor fake_labels = torch::zeros(batch.data.size(0));
-      torch::Tensor fake_output = discriminator->forward(fake_images.detach());
+      torch::Tensor fake_output = discriminator->forward(fake_images.detach()).reshape(fake_labels.sizes());
       torch::Tensor d_loss_fake = torch::binary_cross_entropy(fake_output, fake_labels);
       d_loss_fake.backward();
 
@@ -987,7 +987,7 @@ the data loader every epoch and then write the GAN training code:
       // Train generator.
       generator->zero_grad();
       fake_labels.fill_(1);
-      fake_output = discriminator->forward(fake_images);
+      fake_output = discriminator->forward(fake_images).reshape(fake_labels.sizes());
       torch::Tensor g_loss = torch::binary_cross_entropy(fake_output, fake_labels);
       g_loss.backward();
       generator_optimizer.step();
@@ -1015,7 +1015,7 @@ probabilities.
 	is called *label smoothing*.
 
 Before evaluating the discriminator, we zero out the gradients of its
-parameters. After computing the loss, we back-propagate through the network by
+parameters. After computing the loss, we back-propagate it through the network by
 calling ``d_loss.backward()`` to compute new gradients. We repeat this spiel for
 the fake images. Instead of using images from the dataset, we let the generator
 create fake images for this by feeding it a batch of random noise. We then
@@ -1216,9 +1216,6 @@ tensors and display them with matplotlib:
 
 .. code-block:: python
 
-  from __future__ import print_function
-  from __future__ import unicode_literals
-
   import argparse
 
   import matplotlib.pyplot as plt
@@ -1270,7 +1267,7 @@ Let's now train our model for around 30 epochs:
   -> checkpoint 120
   [30/30][938/938] D_loss: 0.3610 | G_loss: 3.8084
 
-And display the imags in a plot:
+And display the images in a plot:
 
 .. code-block:: shell
 
